@@ -4,15 +4,23 @@
 #include "csv.h"
 #include "io.h"
 
-int main () {
-	char *arquivo = "teste.csv";
-	int colunas = conta_colunas_arquivo (arquivo);
-	rotulo *cab = le_cabecalho (arquivo);
+int main (int argc, char **argv) {
+	if (argc != 2)	return 1;
+	char *arquivo = argv[1];
+ 
+	tabela_csv *tab = inicializa_tabela_csv (arquivo);
 
-	int i = 0;
-	while (i < colunas) {
-		printf("%s %c %c\n", cab[i].nome, cab[i].tipo, cab[i].enable);	
-		i++;
+	int i, j;
+	for (i = 0; i < tab->colunas-1; i++) 
+		printf("%s,", tab->cabecalho[i].nome);
+	printf("%s\n", tab->cabecalho[i].nome);
+
+	for (i = 0; i < tab->linhas; i++) {
+		for (j = 0; j < tab->colunas - 1; j++) 
+			printf("%s,", tab->tabela[i][j]);
+		printf("%s\n", tab->tabela[i][j]);
 	}
+
+	tab = destroi_tabela_csv (tab);
 	return 0;
 }

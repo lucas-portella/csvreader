@@ -91,6 +91,8 @@ char *le_arquivo (const char *nome_arquivo) {
 		c = fgetc(f);
 	}
 	str[i] = '\0';
+	fclose(f);
+	f = NULL;
 
 	return str;
 }

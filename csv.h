@@ -19,5 +19,10 @@ typedef struct{
 	int colunas;
 } tabela_csv;
 
-rotulo *le_cabecalho (char *conteudo_arquivo);
+char *destroi_str (char *);
+
+tabela_csv *inicializa_tabela_csv (const char *nome_arquivo); 
+
+tabela_csv *destroi_tabela_csv (tabela_csv *tab); 
+
 #endif
