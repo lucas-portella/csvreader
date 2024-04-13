@@ -1,8 +1,8 @@
 CC=gcc
 FLAGS=-Wall -Wextra
 
-teste: teste.c io.o csv.o
-	$(CC) $(FLAGS) io.o csv.o teste.c -o teste
+teste_leitura: teste.c io.o csv.o teste_leitura.sh
+	$(CC) $(FLAGS) io.o csv.o teste.c -o teste_leitura; ./teste_leitura.sh
 
 io.o: io.c io.h
 	$(CC) $(FLAGS) -c io.c
@@ -14,5 +14,5 @@ clean:
 	rm -f *.o
 
 purge:
-	rm -f teste
+	rm -f teste_leitura
 purge: clean
