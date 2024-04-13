@@ -124,14 +124,25 @@ char ***inicializa_tabela (char *str_dados, int linhas, int colunas) {
 	if (!tab)	return NULL;
 
 	trata_string(str_dados);
-	char *tok = strtok(str_dados, ",");
-	for (int i = 0; i < linhas; i++) {
-		for (int j = 0; j < colunas; j++) {
-			if (tok){
-				tab[i][j] = strdup(tok);
-				tok = strtok (NULL, ",");
-			}
+
+	int i = 0, j = 0, k = 0;
+	char *tok;
+	while (i < linhas) {
+		while (j < colunas) {
+
+			int w;
+			for (w = k; str_dados[w] != '\0' && str_dados[w] != ','; w++);
+			if (str_dados[w] == ',') {
+				str_dados[w] = '\0';
+				tok = &str_dados[k];
+				k = w+1;
+			} else tok = NULL;
+			if (tok)	tab[i][j] = strdup(tok);
+
+			j++;
 		}
+		i++;
+		j = 0;
 	}
 
 	return tab;
