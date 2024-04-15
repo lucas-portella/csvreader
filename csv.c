@@ -269,6 +269,15 @@ void sumario (tabela_csv *tab) {
 	scanf("%c", &c);
 }
 
+void salvar_dados (tabela_csv *tab) {
+		char nome_arq[20];
+		getchar();
+		printf("Entre com o nome do arquivo: ");
+		scanf("%s", nome_arq);
+		cria_arquivo_csv (tab,nome_arq);
+		printf("Arquivo criado com sucesso\n");
+}
+
 void imprime (tabela_csv *tab) {
 	if (!tab)	return;
 
@@ -302,28 +311,40 @@ void imprime (tabela_csv *tab) {
 				printf("%*s",v_tamanhos[i]+2, tab->cabecalho[i].nome);
 		}
 		printf("\n");
+		
+		int pos_ini_imp, linhas_hab = 0;
+		for (pos_ini_imp = linhas - 1; linhas_hab != 5; pos_ini_imp--) {
+			if (linha_habilitada(tab, pos_ini_imp))	linhas_hab++;
+		}
 
-		for (int i = 0; i < 5 && i < linhas; i++) {
-			printf ("%-*d", digitos+2, i);
-			for (int j = 0; j < colunas; j++) {
-				if (elemento_habilitado(tab,i,j))
-					imprime_elemento(tab,i,j,v_tamanhos[j]);
+		int imp = 0;
+		for (int i = pos_ini_imp; imp < 5 && i < linhas; i++) {
+			if (linha_habilitada(tab, i)) {
+				printf ("%-*d", digitos+2, i);
+				for (int j = 0; j < colunas; j++) {
+					if (elemento_habilitado(tab,i,j))
+						imprime_elemento(tab,i,j,v_tamanhos[j]);
+					}
+				printf("\n");
+				imp++;
 			}
-			printf("\n");
 		}
 
 		printf("%-*s", digitos+2, "...");
 		imprime_pontilhado (v_tamanhos, colunas);
-		for (int i = linhas - 6; i > 4 && i < linhas; i++) {
-			printf ("%-*d", digitos+2, i);
-			for (int j = 0; j < colunas; j++) {
-				if (elemento_habilitado(tab,i,j))
-					imprime_elemento(tab,i,j,v_tamanhos[j]);
+		imp = 0;
+		for (int i = linhas - 6; i > 4 && i < linhas && imp < 5; i++) {
+			if (linha_habilitada(tab,i)) {
+				printf ("%-*d", digitos+2, i);
+				for (int j = 0; j < colunas; j++) {
+					if (elemento_habilitado(tab,i,j))
+						imprime_elemento(tab,i,j,v_tamanhos[j]);
+				}
+				printf("\n");
+				imp++;
 			}
-			printf("\n");
 		}
 	
-	char c;
 	int linhas_habilitadas = 0, colunas_habilitadas = 0;
 	for (int i = 0; i < linhas; i++) 
 		if (tab->enable[i] == EN)	linhas_habilitadas++;
@@ -332,9 +353,6 @@ void imprime (tabela_csv *tab) {
 	
 	printf("\n[%d rows x %d collumns]\n", linhas_habilitadas,
 	colunas_habilitadas);
-	printf("\nPressione ENTER para continuar\n");
-	scanf("%c", &c);
-
 	free(v_tamanhos);
 }
 
@@ -404,13 +422,9 @@ int identifica_filtro (char *filtro) {
 int identifica_variavel (tabela_csv *t, char *variavel) {
 	if (!t)	return -1;
 	for (int i = 0; i < t->colunas; i++) {
-		if (coluna_habilitada(t, i)) {
-			fprintf(stderr, "%s", variavel);
-			if (strcmp (variavel, t->cabecalho[i].nome) == 0)
-				return i;
+		if (strcmp (variavel, t->cabecalho[i].nome) == 0)
+			return i;
 		}
-	}
-
 	return -2;
 }
 
@@ -429,13 +443,13 @@ void filtra (tabela_csv *tab) {
 		diferente
 	};
 
-	getchar();
+	limpa_buffer();
 	printf("Entre com a variavel: "); 
 	scanf("%s", variavel);
-	getchar();
+	limpa_buffer();
 	printf("Escolha um filtro ( == > >= < <= != ): ");
 	scanf("%s", filtro);
-	getchar();
+	limpa_buffer();
 	printf("Digite um valor: ");
 	scanf("%s", valor);
 	
@@ -453,23 +467,181 @@ void filtra (tabela_csv *tab) {
 	imprime (tab);
 
 	char op;
-	getchar();
+	limpa_buffer();
 	printf("Deseja gravar um arquivo com os dados filtrados? [S|N]: ");
 	scanf("%c", &op);
-	if (op == 'S') {
-		char nome_arq[20];
-		getchar();
-		printf("Entre com o nome do arquivo: ");
-		scanf("%s", nome_arq);
-		cria_arquivo_csv (tab,nome_arq);
-		printf("Arquivo criado com sucesso\n");
-	}
-	getchar();
+	if (op == 'S') salvar_dados(tab);
+
+	limpa_buffer();
 	printf("Deseja guardar os dados originais? [S|N]: ");
 	scanf("%c", &op);
 	if (op == 'S') restaura_vet_enable(tab, backup);
 	backup = destroi_str (backup);
-	getchar();
-	printf("Digite ENTER para continuar");
+}
+
+char *backup_en_colunas (tabela_csv *tab) {
+	int colunas = tab->colunas;
+	char *backup = (char*) malloc (colunas * sizeof (char));
+	if (!backup)	return NULL;
+
+	for (int i = 0; i < colunas; i++)	backup[i] = tab->cabecalho[i].enable;
+	return backup;	
+}
+
+void restaura_en_colunas (tabela_csv *tab, char *backup) {
+	if (!tab || !backup)	return;
+
+	int colunas = tab->colunas;	
+	for (int i = 0; i < colunas; i++)	tab->cabecalho[i].enable = backup[i];
+}
+
+void habilita_coluna (tabela_csv *tab, int indice) {
+	if (!tab)	return;
+	if (indice < 0 || indice >= tab->colunas)	return;
+	tab->cabecalho[indice].enable = EN;
+}
+
+void desabilita_colunas (tabela_csv *tab) {
+	if (!tab)	return;
+
+	for (int i = 0; i < tab->colunas; i++)	
+		tab->cabecalho[i].enable = N_EN;
+}
+
+void selecao (tabela_csv *tab) {
+	if (!tab)	return;
+
+	char variaveis[100];
+	char *backup = backup_en_colunas (tab);
+	desabilita_colunas (tab);
+	limpa_buffer();
+	printf("Entre com as variaveis que deseja selecionar (separadas por espaco) : ");
+	scanf("%[^\n]", variaveis);
+
+	char *tok;
+	tok = strtok (variaveis, " ");
+	while (tok) {
+		int indice = identifica_variavel(tab, tok);
+		habilita_coluna (tab, indice);	
+		tok = strtok (NULL, " ");
+	}
+
+	imprime(tab);
+	char op;
+	limpa_buffer();
+	printf("Deseja gravar um arquivo com as variaveis selecionadas? [S|N] : ");
 	scanf("%c", &op);
+	if (op == 'S')	salvar_dados (tab);
+
+	limpa_buffer();
+	printf("Deseja guardar os dados originais? [S|N]: ");
+	scanf("%c", &op);
+	if (op == 'S') restaura_en_colunas (tab, backup);
+	backup = destroi_str (backup);
+}
+
+char ***posicao_original_dados (tabela_csv *tab) {
+	if (!tab)	return NULL;
+
+	int linhas = tab->linhas;
+	char ***backup = (char ***) malloc (linhas * sizeof(char**));
+	if (!backup)	return NULL;
+
+	for (int i = 0; i < linhas; i++)
+		backup[i] = tab->tabela[i];
+
+	return backup;
+}
+
+void restaura_posicao_original_dados (tabela_csv *tab, char ***backup) {
+	if (!tab || !backup)	return;
+
+	for (int i = 0; i < tab->linhas; i++)
+		tab->tabela[i] = backup[i];
+}
+
+void troca_linhas (tabela_csv *tab, int l1, int l2) {
+	if (!tab)	return;
+
+	char **tmp = tab->tabela[l1];
+	tab->tabela[l1] = tab->tabela[l2];
+	tab->tabela[l2] = tmp;
+}
+
+// retorna a ultima posicao com elemento valido
+int move_invalidos (tabela_csv *tab, int coluna) {
+	if (!tab) return -1;
+	
+	int ultima_pos = tab->linhas-1;
+	int i = 0;
+	while (i < ultima_pos) {
+		if (!tab->tabela[i][coluna])
+			troca_linhas(tab,i,ultima_pos--);
+		i++;
+	}
+
+	if (tab->tabela[i][coluna])	return i;
+	return i-1;
+}
+
+int particiona (tabela_csv *t, int(*compara)(tabela_csv *, int , int, char*),
+int coluna, int ini, int fim) {
+	int i = ini - 1;
+	int j ;
+	int p = fim;
+	char *pivo = t->tabela[fim][coluna];
+
+	for (j = ini; j < fim; j++) {
+		if (compara(t,j,coluna,pivo)) {
+			i++;
+			troca_linhas (t, i, j);
+		}
+	}
+	troca_linhas (t,i+1,p);
+	return i+1;
+}
+
+void quick_sort (tabela_csv *t, int(*compara)(tabela_csv *, int , int, char*),
+int coluna, int ini, int fim) {
+	if (ini < fim) {
+		int pos = ini + rand()%(fim - ini +1);
+		troca_linhas(t,pos,fim);
+		int p = particiona (t, compara, coluna, ini, fim);
+		quick_sort (t, compara, coluna, ini, p-1);
+		quick_sort (t, compara, coluna, p+1, fim);
+	}
+}
+
+void ordena (tabela_csv *tab) {
+
+	int(*compara[])(tabela_csv *, int, int, char*) = {
+		menor,
+		maior
+	};
+
+	char variavel[20], op;
+	int id_func;
+	limpa_buffer();
+	printf("Entre com a variavel: ");
+	scanf("%s", variavel);
+	limpa_buffer();
+	printf("Selecione uma opcao [A]scendente ou [D]ecrescente: ");
+	scanf("%c", &op);
+	if (op == 'A')	id_func = 0;
+	else	id_func = 1;
+	int coluna = identifica_variavel(tab, variavel);
+
+	char ***backup = posicao_original_dados(tab);
+	int fim = move_invalidos(tab, coluna);
+	quick_sort(tab,compara[id_func],coluna, 0, fim);
+	imprime(tab);
+	limpa_buffer();
+	printf("Deseja gravar um arquivo com os dados ordenados? [S|N] ");
+	scanf("%c", &op);
+	if (op == 'S')	salvar_dados(tab);
+	limpa_buffer();
+	printf("Deseja descartar os dados originais? [S|N] ");
+	scanf("%c", &op);
+	if (op == 'N')	restaura_posicao_original_dados(tab, backup);
+	free(backup);
 }

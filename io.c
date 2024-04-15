@@ -3,6 +3,12 @@
 #include <string.h>
 #include "io.h"
 
+void limpa_buffer () {
+	int c;
+	do c = getchar();
+	while (c != EOF && c != '\n');
+}
+
 int conta_linhas_arquivo (const char *nome_arquivo) {
 	FILE *f;
 	int linhas = 0;
@@ -95,4 +101,40 @@ char *le_arquivo (const char *nome_arquivo) {
 	f = NULL;
 
 	return str;
+}
+
+void cria_arquivo_csv (tabela_csv *t, char *nome_arquivo) {
+	if (!t || !nome_arquivo)	return;
+
+	FILE *f = fopen (nome_arquivo, "w");
+	if (!f)	return;		
+
+	int i, j;
+	int ultima_linha;
+	for (i = t->linhas-1; i >=0 && !linha_habilitada(t,i); i--);
+	ultima_linha = i;
+	int ultima_coluna;
+	for (i = t->colunas-1; i>=0 && !coluna_habilitada(t,i); i--);
+	ultima_coluna = i;
+
+	for (i = 0; i <= ultima_coluna; i++) {
+		if (coluna_habilitada(t,i)) fprintf(f,"%s",t->cabecalho[i].nome);
+		if (i != ultima_coluna)	fprintf(f, ",");
+	}
+	fprintf(f,"\n");	
+		
+	for (i = 0; i <= ultima_linha; i++) {
+		if (linha_habilitada(t,i)) {
+			for (j = 0; j <= ultima_coluna; j++) {
+				if (coluna_habilitada (t,j)) {
+					if (t->tabela[i][j])	fprintf(f,"%s",t->tabela[i][j]);
+					if (j != ultima_coluna)	fprintf(f, ",");
+				}
+			}
+			if (i != ultima_linha)	fprintf(f,"\n");
+		}
+	}
+
+	fclose(f);
+	f = NULL;
 }
