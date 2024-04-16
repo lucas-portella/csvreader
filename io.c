@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include "csv.h"
+#include "estatistica.h"
 #include "io.h"
 
 void limpa_buffer () {

@@ -3,10 +3,18 @@
 #include <string.h>
 #include "csv.h"
 #include "io.h"
+#include "estatistica.h"
 
 char *destroi_str (char *str) {
 	if (str) free(str);
 	return NULL;
+}
+
+char *retorna_elemento (tabela_csv *tab, int linha, int coluna) {
+	if (!tab)	return NULL;
+	if (linha >= tab->linhas)	return NULL;
+	if (coluna >= tab->colunas)	return NULL;
+	return tab->tabela[linha][coluna];
 }
 
 // retorna o indice para primeira posicao 
@@ -63,18 +71,6 @@ int elemento_habilitado (tabela_csv *tab, int linha, int coluna) {
 		if (tab->enable[linha] == EN)	return 1;
 	}	
 	return 0;
-}
-
-void imprime_elemento (tabela_csv *tab, int linha, int coluna, int largura) {
-	char *nan_str = "NaN";
-	if (tab->tabela[linha][coluna]) printf("%*s", largura+2, tab->tabela[linha][coluna]);
-	else	printf("%*s", largura+2, nan_str);
-}
-
-void imprime_pontilhado (int *v_tam, int colunas) {
-	for (int i = 0; i < colunas; i++) 
-		printf("%*s", v_tam[i]+2, "...");
-	printf("\n");
 }
 
 rotulo *destroi_cabecalho (rotulo *cab, int colunas) {
@@ -278,81 +274,119 @@ void salvar_dados (tabela_csv *tab) {
 		printf("Arquivo criado com sucesso\n");
 }
 
+/*	imprime uma linha da tabela, considerando-a valida
+		v_tam: vetor com o tamanho das strings para formatacao	*/
+void imprime_linha (tabela_csv *tab, int linha, int *v_tam) {
+	if (!tab || !v_tam)	return;
+
+	int colunas = tab->colunas;
+	printf("%*d\t", v_tam[colunas], linha);
+	for (int i = 0; i < colunas; i++) {
+		if (coluna_habilitada(tab,i)) {
+			char* str = retorna_elemento (tab, linha, i);
+			if (str) {
+				printf("%*s\t", v_tam[i], str);
+			}	else printf("%*s\t", v_tam[i], "NaN");
+		}
+	}
+	printf("\n");
+}
+
+/*	v_tam: vetor com o tamanho das strings para formatacao */
+void imprime_pontilhado (tabela_csv *tab, int *v_tam) {
+	char *pont = "...";
+	int colunas = tab->colunas;
+	printf("%-*s\t", v_tam[colunas], pont);
+	for (int i = 0; i < colunas; i++)
+		if (coluna_habilitada (tab, i))	printf("%*s\t", v_tam[i], pont);
+	printf("\n");
+}
+
+void imprime_cabecalho (tabela_csv* tab, int *v_tam) {
+	int colunas = tab->colunas;
+	printf("%*s\t", v_tam[colunas], "");
+	for (int i = 0; i < colunas; i++) {
+		char *str = tab->cabecalho[i].nome;
+		if (coluna_habilitada(tab,i))	printf("%*s\t", v_tam[i], str);
+	}
+	printf("\n");
+}
+
+int linhas_habilitadas (tabela_csv* tab) {
+	if (!tab)	return -1;
+	int linhas = tab->linhas;
+	int l_hab = 0;
+	for (int i = 0; i < linhas; i++)
+		if (linha_habilitada(tab,i))	l_hab ++;
+	return l_hab;
+}
+
+int colunas_habilitadas (tabela_csv* tab) {
+	if (!tab)	return -1;
+	int colunas = tab->colunas;
+	int c_hab = 0;
+	for (int i = 0; i < colunas; i++) 
+		if (coluna_habilitada(tab,i))	c_hab++;
+	return c_hab;
+}
+
 void imprime (tabela_csv *tab) {
 	if (!tab)	return;
 
 	int linhas = tab->linhas;
 	int colunas = tab->colunas;
-	int *v_tamanhos = (int*) malloc (colunas * sizeof(int));
+	/*	vetor de tamanhos para formatacao	*/
+	int *v_tamanhos = (int*) malloc ((colunas + 1) * sizeof(int));
 	if (!v_tamanhos)	return;
+
+	/*	identificando tamanhos para formatacao */
+	
+	int digitos = 0;
+	int n_linha = linhas - 1;
+	while (n_linha > 0) {
+		n_linha = n_linha / 10;
+		digitos++;
+	} 
+	v_tamanhos[colunas] = digitos;
 
 	for (int i = 0; i < colunas; i++) 
 		v_tamanhos[i] = strlen (tab->cabecalho[i].nome);
-
-	for (int i = 0; i < linhas; i++) {
+	
+	for (int i =0; i < linhas; i++) {
 		for (int j = 0; j < colunas; j++) {
-			if (tab->tabela[i][j]) {
-				int tam = strlen (tab->tabela[i][j]);
+			char *str = retorna_elemento(tab,i,j);
+			if (str) {
+				int tam = strlen (str);
 				if (tam > v_tamanhos[j])	v_tamanhos[j] = tam;
-				}
 			}
 		}
-
-		int digitos = 0;
-		int n_linha = linhas - 1;
-		while (n_linha > 0) {
-			n_linha = n_linha / 10;
-			digitos++;
-		} 
-
-		printf("%-*s", digitos+2, "");
-		for (int i = 0; i < colunas; i++) {
-			if (coluna_habilitada (tab, i))
-				printf("%*s",v_tamanhos[i]+2, tab->cabecalho[i].nome);
-		}
-		printf("\n");
-		
-		int pos_ini_imp, linhas_hab = 0;
-		for (pos_ini_imp = linhas - 1; linhas_hab != 5; pos_ini_imp--) {
-			if (linha_habilitada(tab, pos_ini_imp))	linhas_hab++;
-		}
-
-		int imp = 0;
-		for (int i = pos_ini_imp; imp < 5 && i < linhas; i++) {
-			if (linha_habilitada(tab, i)) {
-				printf ("%-*d", digitos+2, i);
-				for (int j = 0; j < colunas; j++) {
-					if (elemento_habilitado(tab,i,j))
-						imprime_elemento(tab,i,j,v_tamanhos[j]);
-					}
-				printf("\n");
-				imp++;
-			}
-		}
-
-		printf("%-*s", digitos+2, "...");
-		imprime_pontilhado (v_tamanhos, colunas);
-		imp = 0;
-		for (int i = linhas - 6; i > 4 && i < linhas && imp < 5; i++) {
-			if (linha_habilitada(tab,i)) {
-				printf ("%-*d", digitos+2, i);
-				for (int j = 0; j < colunas; j++) {
-					if (elemento_habilitado(tab,i,j))
-						imprime_elemento(tab,i,j,v_tamanhos[j]);
-				}
-				printf("\n");
-				imp++;
-			}
-		}
+	}
 	
-	int linhas_habilitadas = 0, colunas_habilitadas = 0;
-	for (int i = 0; i < linhas; i++) 
-		if (tab->enable[i] == EN)	linhas_habilitadas++;
-	for (int j = 0; j < colunas; j++)
-		if (tab->cabecalho[j].enable == EN)	colunas_habilitadas ++;
-	
-	printf("\n[%d rows x %d collumns]\n", linhas_habilitadas,
-	colunas_habilitadas);
+	/*	impressao dos elementos */
+	imprime_cabecalho (tab, v_tamanhos);
+	int impressos = 0, i;
+	for (i = 0; i < linhas && impressos < 5; i++) {
+		if (linha_habilitada (tab, i)) {
+			imprime_linha (tab, i, v_tamanhos);
+			impressos++;
+		}
+	}
+	imprime_pontilhado (tab, v_tamanhos);
+	/*	encontrando as ultimas 5 linhas validas	*/	
+	int j, validas = 0;
+	for (j = linhas - 1; j > i && validas < 4; j--) {
+		if (linha_habilitada (tab, j))	validas++;
+	}
+	for (; j < linhas && validas >= 0; j++) {
+		if (linha_habilitada(tab,j)) {
+			imprime_linha (tab, j, v_tamanhos);
+			validas--;
+		}
+	}
+
+	int l_hab = linhas_habilitadas (tab);
+	int c_hab = colunas_habilitadas (tab);
+	printf("\n[%d rows x %d collumns]\n", l_hab, c_hab);
 	free(v_tamanhos);
 }
 
@@ -643,5 +677,23 @@ void ordena (tabela_csv *tab) {
 	printf("Deseja descartar os dados originais? [S|N] ");
 	scanf("%c", &op);
 	if (op == 'N')	restaura_posicao_original_dados(tab, backup);
+	free(backup);
+}
+
+void descricao (tabela_csv *tab) {
+	if (!tab)	return;
+
+	char variavel[20];
+	limpa_buffer();
+	printf("Entre com a variavel :");
+	scanf("%s", variavel);
+	int coluna = identifica_variavel(tab, variavel);
+
+	char ***backup = posicao_original_dados(tab);
+	int fim = move_invalidos(tab, coluna);
+	quick_sort(tab,&menor,coluna, 0, fim);
+	info_estat *i = gera_estatistica (tab, coluna);
+	imprime_estatisticas(i);
+	restaura_posicao_original_dados(tab, backup);
 	free(backup);
 }

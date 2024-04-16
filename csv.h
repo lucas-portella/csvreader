@@ -21,9 +21,13 @@ typedef struct{
 
 int linha_habilitada (tabela_csv *tab, int linha);
 
+int linhas_habilitadas (tabela_csv* tab);
+
 int coluna_habilitada (tabela_csv *tab, int coluna);
 
 int elemento_habilitado (tabela_csv *tab, int linha, int coluna);
+
+char *retorna_elemento (tabela_csv *tab, int linha, int coluna); 
 
 char *destroi_str (char *);
 
@@ -40,4 +44,6 @@ void filtra (tabela_csv *tab);
 void selecao (tabela_csv *tab);
 
 void ordena(tabela_csv *tab);
+
+void descricao (tabela_csv *tab);
 #endif

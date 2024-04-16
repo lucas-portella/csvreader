@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "csv.h"
+#include "estatistica.h"
 #include "io.h"
 
 int main (int argc, char **argv) {
@@ -19,6 +20,8 @@ int main (int argc, char **argv) {
 	selecao(tab);
 	printf (" ==== ordenacao ====\n");
 	ordena(tab);
+	printf ("==== descricao =====\n");
+	descricao(tab);
 	tab = destroi_tabela_csv (tab);
 	return 0;
 }

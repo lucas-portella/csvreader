@@ -1,6 +1,5 @@
 #ifndef __IO__
 #define __IO__
-#include "csv.h"
 
 void limpa_buffer ();
 
